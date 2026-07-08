@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading Season</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #FAF7EF;
+    --paper-dark: #F1ECE0;
+    --shadow: #DCD5C4;
+    --ink: #1C1A16;
+    --ink-soft: #6B6557;
+    --rule: #D3CCBA;
+    --ink-strong: #0A0908;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--paper-dark);
+    font-family:'Source Serif 4', serif;
+    color: var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .book{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    background: var(--paper);
+    box-shadow: 0 0 40px rgba(0,0,0,0.15);
+    position:relative;
+    padding-bottom:40px;
+  }
+  /* Ribbon tab navigation */
+  .ribbons{
+    display:flex;
+    position:relative;
+    padding:0 14px;
+    gap:6px;
+    overflow-x:auto;
+    border-bottom:1px solid var(--rule);
+    background: var(--paper);
+  }
+  .ribbon{
+    flex:0 0 auto;
+    padding:10px 12px 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    background: var(--paper-dark);
+    border:none;
+    cursor:pointer;
+    position:relative;
+    clip-path: polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%);
+    transition: background 0.2s, color 0.2s;
+    white-space:nowrap;
+  }
+  .ribbon.active{
+    background: var(--ink-strong);
+    color: var(--paper);
+  }
+  header.titlepage{
+    text-align:center;
+    padding:28px 24px 18px;
+    border-bottom:1px double var(--rule);
+  }
+  header.titlepage .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+  }
+  header.titlepage h1{
+    font-family:'Libre Caslon Display', serif;
+    font-size:30px;
+    margin:6px 0 2px;
+    font-weight:400;
+  }
+  header.titlepage .sub{
+    font-style:italic;
+    color: var(--ink-soft);
+    font-size:13px;
+  }
+  main{ padding:20px 22px 10px; }
+  .chapter-head{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin: 26px 0 12px;
+  }
+  .chapter-head .num{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color: var(--ink-soft);
+    border:1px solid var(--rule);
+    border-radius:50%;
+    width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto;
+  }
+  .chapter-head h2{
+    font-family:'Libre Caslon Display', serif;
+    font-weight:400;
+    font-size:17px;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+  .chapter-head::after{
+    content:"";
+    flex:1;
+    border-bottom:1px solid var(--rule);
+    transform:translateY(-3px);
+  }
+  .card{
+    background: var(--paper);
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .stat-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .stat-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+  }
+  .stat-value{
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    color: var(--ink-strong);
+  }
+  .level-block{ text-align:center; padding:6px 0 14px; }
+  .level-block .level-num{
+    font-family:'Libre Caslon Display', serif;
+    font-size:42px;
+    line-height:1;
+  }
+  .level-block .level-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    margin-top:2px;
+  }
+  /* stitched ribbon progress bar */
+  .stitch-bar{
+    display:flex;
+    gap:3px;
+    margin:14px 0 4px;
+  }
+  .stitch{
+    flex:1;
+    height:14px;
+    background: var(--paper-dark);
+    border:1px solid var(--rule);
+    transform: skewX(-12deg);
+  }
+  .stitch.filled{
+    background: var(--ink-strong);
+    border-color: var(--ink-strong);
+  }
+  .progress-caption{
+    display:flex;
+    justify-content:space-between;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color: var(--ink-soft);
+  }
+  .bar-track{
+    height:10px;
+    background: var(--paper-dark);
+    border:1px solid var(--rule);
+    border-radius:2px;
+    overflow:hidden;
+    margin:8px 0 4px;
+  }
+  .bar-fill{
+    height:100%;
+    background: var(--ink-strong);
+    transition:width 0.4s ease;
+  }
+  label{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    margin-bottom:5px;
+  }
+  input, select{
+    width:100%;
+    font-family:'Source Serif 4', serif;
+    font-size:15px;
+    padding:9px 10px;
+    border:1px solid var(--rule);
+    background: var(--paper-dark);
+    color: var(--ink);
+    border-radius:2px;
+    margin-bottom:12px;
+  }
+  input:focus, select:focus, button:focus-visible{
+    outline:2px solid var(--ink-strong);
+    outline-offset:1px;
+  }
+  .field-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .checkrow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .checkrow input{ width:auto; margin:0; }
+  .checkrow label{ margin:0; }
+  button.primary{
+    width:100%;
+    background: var(--ink-strong);
+    color: var(--paper);
+    border:none;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:13px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  button.primary:active{ opacity:0.8; }
+  .action-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:4px;
+  }
+  button.secondary{
+    background: var(--paper);
+    border:1px solid var(--ink);
+    color: var(--ink);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.04em;
+    padding:10px 6px;
+    border-radius:2px;
+    cursor:pointer;
+    text-align:center;
+  }
+  button.secondary:active{ background: var(--paper-dark); }
+  .log-entry{
+    display:flex;
+    justify-content:space-between;
+    padding:8px 0;
+    border-bottom:1px solid var(--rule);
+    font-size:14px;
+  }
+  .log-entry:last-child{ border-bottom:none; }
+  .log-entry .xp{
+    font-family:'JetBrains Mono', monospace;
+    color: var(--ink-soft);
+    font-size:12px;
+  }
+  .book-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:10px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .book-row:last-child{border-bottom:none;}
+  .book-row .title{ font-style:italic; }
+  .book-row .meta{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color: var(--ink-soft);
+  }
+  .badge-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .badge{
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:12px 10px;
+    text-align:center;
+    background: var(--paper-dark);
+    opacity:0.45;
+  }
+  .badge.earned{
+    opacity:1;
+    background: var(--paper);
+    border-color: var(--ink);
+  }
+  .badge .icon{ font-size:22px; display:block; margin-bottom:4px; filter:grayscale(1); }
+  .badge .name{ font-size:11.5px; line-height:1.3; }
+  .badge .xp{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color: var(--ink-soft);
+    margin-top:3px;
+    display:block;
+  }
+  .shop-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:11px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .shop-row:last-child{border-bottom:none;}
+  .shop-row .name{ font-size:14.5px; }
+  .shop-row .cost{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color: var(--ink-soft);
+  }
+  button.redeem{
+    background:none;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    padding:7px 10px;
+    border-radius:2px;
+    cursor:pointer;
+    margin-left:10px;
+    flex:0 0 auto;
+  }
+  button.redeem:disabled{
+    opacity:0.3;
+    cursor:not-allowed;
+  }
+  .empty{
+    font-style:italic;
+    color: var(--ink-soft);
+    font-size:13px;
+    text-align:center;
+    padding:14px 0;
+  }
+  .footer-page{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color: var(--ink-soft);
+    letter-spacing:0.1em;
+    padding-top:18px;
+  }
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%);
+    background: var(--ink-strong);
+    color: var(--paper);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    padding:10px 18px;
+    border-radius:2px;
+    opacity:0;
+    transition:opacity 0.3s;
+    pointer-events:none;
+    z-index:50;
+    max-width:90%;
+    text-align:center;
+  }
+  .toast.show{ opacity:1; }
+  .loading{
+    text-align:center;
+    padding:60px 20px;
+    font-style:italic;
+    color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="book" id="book">
+  <div class="loading" id="loading">Opening the book…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LEVELS = [
+  {level:1, xp:0, label:"Start Season"},
+  {level:2, xp:250, label:"Coffee or snack while reading"},
+  {level:3, xp:600, label:"New bookmark"},
+  {level:4, xp:1000, label:"Buy one used book"},
+  {level:5, xp:1500, label:"Movie night"},
+  {level:6, xp:2100, label:"Buy any paperback under $20"},
+  {level:7, xp:2800, label:"Reading café trip"},
+  {level:8, xp:3600, label:"Hardcover upgrade"},
+  {level:9, xp:4500, label:"Buy two books"},
+  {level:10, xp:5500, label:"Premium/special edition book"},
+];
+
+const BADGES = [
+  {id:'streak3', icon:'🔥', name:'3-Day Streak', xp:10, check:s=>s.highestStreak>=3},
+  {id:'streak7', icon:'🔥', name:'7-Day Streak', xp:25, check:s=>s.highestStreak>=7},
+  {id:'streak14', icon:'🔥', name:'14-Day Streak', xp:40, check:s=>s.highestStreak>=14},
+  {id:'streak30', icon:'👑', name:'30-Day Streak', xp:50, check:s=>s.highestStreak>=30},
+  {id:'pages100', icon:'⚡', name:'100 Pages Read', xp:10, check:s=>s.totalPages>=100},
+  {id:'pages500', icon:'⚡', name:'500 Pages Read', xp:25, check:s=>s.totalPages>=500},
+  {id:'pages1000', icon:'💎', name:'1,000 Pages', xp:50, check:s=>s.totalPages>=1000},
+  {id:'firstbook', icon:'📖', name:'First Book Finished', xp:15, check:s=>s.books.length>=1},
+  {id:'threebooks', icon:'📚', name:'Three Books Finished', xp:30, check:s=>s.books.length>=3},
+  {id:'fivebooks', icon:'📚', name:'Five Books Finished', xp:50, check:s=>s.books.length>=5},
+  {id:'genres3', icon:'🏛', name:'Three Genres Read', xp:30, check:s=>new Set(s.books.map(b=>b.genre).filter(Boolean)).size>=3},
+  {id:'fastbook', icon:'🎯', name:'Finished a Book in 7 Days', xp:30, check:s=>s.books.some(b=>b.fast)},
+  {id:'beforebed10', icon:'🌙', name:'Read Before Bed ×10', xp:20, check:s=>s.beforeBedCount>=10},
+];
+
+const REWARDS = [
+  {id:'coffee', name:'Fancy coffee', cost:300},
+  {id:'bookmark', name:'New bookmark', cost:500},
+  {id:'usedbook', name:'Used book', cost:900},
+  {id:'paperback', name:'Paperback', cost:1500},
+  {id:'hardcover', name:'Hardcover', cost:2200},
+  {id:'collector', name:"Collector's Edition", cost:4000},
+];
+
+const DEFAULT_STATE = {
+  lifetimeXP: 0,
+  spendableXP: 0,
+  totalPages: 0,
+  totalMinutes: 0,
+  currentStreak: 0,
+  highestStreak: 0,
+  lastReadDate: null,
+  beforeBedCount: 0,
+  earnedBadges: [],
+  redeemed: [],
+  logs: [],
+  books: [],
+  currentBook: { title:'', totalPages:'', currentPage:'', genre:'', startDate:'' },
+};
+
+let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+let activeTab = 'dashboard';
+const STORAGE_KEY = 'reading-season-state';
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+async function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      state = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), JSON.parse(raw));
+    }
+  }catch(e){
+    // nothing saved yet, or storage unavailable — use defaults
+  }
+  render();
+}
+
+async function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.error('Storage error', e);
+    toast('Could not save — your browser may be blocking storage');
+  }
+}
+
+function levelFromXP(xp){
+  let current = LEVELS[0];
+  for(const l of LEVELS){ if(xp >= l.xp) current = l; }
+  const idx = LEVELS.indexOf(current);
+  const next = LEVELS[idx+1] || null;
+  return {current, next};
+}
+
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function daysBetween(a,b){
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+function addXP(amount){
+  state.lifetimeXP += amount;
+  state.spendableXP += amount;
+}
+
+function updateStreak(){
+  const today = todayStr();
+  if(state.lastReadDate === today) return; // already logged today
+  if(state.lastReadDate){
+    const gap = daysBetween(state.lastReadDate, today);
+    if(gap === 1){ state.currentStreak += 1; }
+    else if(gap > 1){ state.currentStreak = 1; }
+  } else {
+    state.currentStreak = 1;
+  }
+  state.lastReadDate = today;
+  if(state.currentStreak > state.highestStreak) state.highestStreak = state.currentStreak;
+}
+
+function checkBadges(){
+  const newly = [];
+  for(const b of BADGES){
+    if(!state.earnedBadges.includes(b.id) && b.check(state)){
+      state.earnedBadges.push(b.id);
+      addXP(b.xp);
+      newly.push(b);
+    }
+  }
+  return newly;
+}
+
+function announceBadges(newly){
+  if(newly.length){
+    toast(`Badge earned: ${newly.map(b=>b.name+' +'+b.xp+'XP').join(', ')}`);
+  }
+}
+
+// ---------- Actions ----------
+
+function logReading(pages, minutes, beforeBed){
+  pages = Number(pages)||0;
+  minutes = Number(minutes)||0;
+  if(pages<=0 && minutes<=0) return;
+  const xp = pages*2 + Math.floor(minutes/15)*10;
+  addXP(xp);
+  state.totalPages += pages;
+  state.totalMinutes += minutes;
+  if(beforeBed) state.beforeBedCount += 1;
+  if(state.currentBook && Number(state.currentBook.currentPage||0) >= 0 && pages>0){
+    const cp = Number(state.currentBook.currentPage||0) + pages;
+    state.currentBook.currentPage = String(cp);
+  }
+  state.logs.unshift({date: todayStr(), pages, minutes, xp, beforeBed});
+  updateStreak();
+  const newly = checkBadges();
+  saveState();
+  render();
+  toast(`Logged: +${xp} XP`);
+  announceBadges(newly);
+}
+
+function finishChapter(){
+  addXP(25);
+  state.logs.unshift({date: todayStr(), pages:0, minutes:0, xp:25, label:'Finished a chapter'});
+  saveState(); render();
+  toast('Chapter finished: +25 XP');
+}
+
+function writeSummary(){
+  addXP(75);
+  state.logs.unshift({date: todayStr(), pages:0, minutes:0, xp:75, label:'Wrote a summary'});
+  saveState(); render();
+  toast('Summary written: +75 XP');
+}
+
+function highlightNotes(){
+  addXP(20);
+  state.logs.unshift({date: todayStr(), pages:0, minutes:0, xp:20, label:'Highlighted 5 ideas'});
+  saveState(); render();
+  toast('Notes taken: +20 XP');
+}
+
+function finishBook(rating){
+  const cb = state.currentBook || {};
+  if(!cb.title){ toast('Add a current book title first'); return; }
+  let fast = false;
+  if(cb.startDate){
+    const days = daysBetween(cb.startDate, todayStr());
+    if(days <= 7) fast = true;
+  }
+  state.books.unshift({
+    title: cb.title,
+    date: todayStr(),
+    rating: rating,
+    xp: 50,
+    genre: cb.genre || '',
+    fast,
+  });
+  addXP(50);
+  state.currentBook = { title:'', totalPages:'', currentPage:'', genre:'', startDate:'' };
+  const newly = checkBadges();
+  saveState(); render();
+  toast('Book finished: +50 XP');
+  announceBadges(newly);
+}
+
+function redeemReward(reward){
+  if(state.spendableXP < reward.cost) return;
+  state.spendableXP -= reward.cost;
+  state.redeemed.unshift({name: reward.name, cost: reward.cost, date: todayStr()});
+  saveState(); render();
+  toast(`Redeemed: ${reward.name}`);
+}
+
+// ---------- Rendering ----------
+
+function el(html){
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstChild;
+}
+
+function renderRibbons(){
+  const tabs = [
+    {id:'dashboard', label:'Dashboard'},
+    {id:'log', label:'Today'},
+    {id:'library', label:'Library'},
+    {id:'badges', label:'Badges'},
+    {id:'shop', label:'Shop'},
+  ];
+  return `<nav class="ribbons">${tabs.map(t=>`<button class="ribbon ${activeTab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join('')}</nav>`;
+}
+
+function renderDashboard(){
+  const {current, next} = levelFromXP(state.lifetimeXP);
+  const span = next ? next.xp - current.xp : 1;
+  const into = next ? state.lifetimeXP - current.xp : span;
+  const pct = next ? Math.min(100, Math.round((into/span)*100)) : 100;
+  const stitches = 12;
+  const filled = Math.round((pct/100)*stitches);
+  let stitchHtml = '';
+  for(let i=0;i<stitches;i++){ stitchHtml += `<div class="stitch ${i<filled?'filled':''}"></div>`; }
+
+  const cb = state.currentBook || {};
+  const total = Number(cb.totalPages)||0;
+  const curp = Number(cb.currentPage)||0;
+  const bookPct = total>0 ? Math.min(100, Math.round((curp/total)*100)) : 0;
+
+  return `
+    <div class="card level-block">
+      <div class="level-num">${current.level}</div>
+      <div class="level-label">Level — ${current.label}</div>
+      <div class="stitch-bar">${stitchHtml}</div>
+      <div class="progress-caption">
+        <span>${state.lifetimeXP} XP lifetime</span>
+        <span>${next ? `${next.xp} to Lv.${next.level}` : 'Max level'}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="stat-row"><span class="stat-label">Spendable XP</span><span class="stat-value">${state.spendableXP}</span></div>
+      <div class="stat-row"><span class="stat-label">Current Streak</span><span class="stat-value">🔥 ${state.currentStreak} ${state.currentStreak===1?'day':'days'}</span></div>
+      <div class="stat-row"><span class="stat-label">Highest Streak</span><span class="stat-value">${state.highestStreak} days</span></div>
+      <div class="stat-row"><span class="stat-label">Total Pages Read</span><span class="stat-value">${state.totalPages}</span></div>
+      <div class="stat-row"><span class="stat-label">Books Finished</span><span class="stat-value">${state.books.length}</span></div>
+    </div>
+
+    <div class="chapter-head"><div class="num">§</div><h2>Current Book</h2></div>
+    <div class="card">
+      <label for="cb-title">Title</label>
+      <input id="cb-title" type="text" value="${(cb.title||'').replace(/"/g,'&quot;')}" placeholder="What are you reading?">
+      <div class="field-grid">
+        <div>
+          <label for="cb-total">Total Pages</label>
+          <input id="cb-total" type="number" min="0" value="${cb.totalPages||''}">
+        </div>
+        <div>
+          <label for="cb-current">Current Page</label>
+          <input id="cb-current" type="number" min="0" value="${cb.currentPage||''}">
+        </div>
+      </div>
+      <div class="field-grid">
+        <div>
+          <label for="cb-genre">Genre</label>
+          <input id="cb-genre" type="text" value="${(cb.genre||'').replace(/"/g,'&quot;')}" placeholder="e.g. Fiction">
+        </div>
+        <div>
+          <label for="cb-start">Date Started</label>
+          <input id="cb-start" type="date" value="${cb.startDate||''}">
+        </div>
+      </div>
+      ${total>0 ? `<div class="bar-track"><div class="bar-fill" style="width:${bookPct}%"></div></div><div class="progress-caption"><span>${bookPct}% complete</span><span>${Math.max(0,total-curp)} pages left</span></div>` : ''}
+      <div style="margin-top:12px;">
+        <button class="primary" id="save-book">Save Book Details</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderLog(){
+  return `
+    <div class="chapter-head"><div class="num">I</div><h2>Log Today's Reading</h2></div>
+    <div class="card">
+      <div class="field-grid">
+        <div>
+          <label for="log-pages">Pages Read</label>
+          <input id="log-pages" type="number" min="0" placeholder="0">
+        </div>
+        <div>
+          <label for="log-minutes">Minutes Read</label>
+          <input id="log-minutes" type="number" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="checkrow">
+        <input type="checkbox" id="log-bedtime">
+        <label for="log-bedtime" style="margin:0;">Read before bed</label>
+      </div>
+      <button class="primary" id="log-submit">Log Reading (2 XP / page · 10 XP / 15 min)</button>
+    </div>
+
+    <div class="chapter-head"><div class="num">II</div><h2>Milestones</h2></div>
+    <div class="card action-grid">
+      <button class="secondary" id="act-chapter">Finish Chapter<br><span style="opacity:.6">+25 XP</span></button>
+      <button class="secondary" id="act-summary">Write Summary<br><span style="opacity:.6">+75 XP</span></button>
+      <button class="secondary" id="act-notes">Highlight 5 Ideas<br><span style="opacity:.6">+20 XP</span></button>
+      <button class="secondary" id="act-finish">Finish Book<br><span style="opacity:.6">+50 XP</span></button>
+    </div>
+
+    <div class="chapter-head"><div class="num">III</div><h2>Recent Entries</h2></div>
+    <div class="card">
+      ${state.logs.length ? state.logs.slice(0,10).map(l=>`
+        <div class="log-entry">
+          <span>${l.label ? l.label : `${l.pages?l.pages+' pg':''}${l.pages&&l.minutes?' · ':''}${l.minutes?l.minutes+' min':''}${l.beforeBed?' · 🌙':''}`}</span>
+          <span class="xp">${l.date} · +${l.xp} XP</span>
+        </div>`).join('') : `<div class="empty">No entries yet — log your first session above.</div>`}
+    </div>
+  `;
+}
+
+function renderLibrary(){
+  return `
+    <div class="chapter-head"><div class="num">§</div><h2>Books Completed</h2></div>
+    <div class="card">
+      ${state.books.length ? state.books.map(b=>`
+        <div class="book-row">
+          <div>
+            <div class="title">${b.title}</div>
+            <div class="meta">${b.genre||'—'}${b.fast?' · finished in 7 days':''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="meta">${'★'.repeat(b.rating||0)}${'☆'.repeat(5-(b.rating||0))}</div>
+            <div class="meta">${b.date} · +${b.xp} XP</div>
+          </div>
+        </div>`).join('') : `<div class="empty">Your finished books will be shelved here.</div>`}
+    </div>
+  `;
+}
+
+function renderBadges(){
+  return `
+    <div class="chapter-head"><div class="num">§</div><h2>Achievement Badges</h2></div>
+    <div class="badge-grid">
+      ${BADGES.map(b=>{
+        const earned = state.earnedBadges.includes(b.id);
+        return `<div class="badge ${earned?'earned':''}">
+          <span class="icon">${b.icon}</span>
+          <span class="name">${b.name}</span>
+          <span class="xp">${earned ? `+${b.xp} XP earned` : `+${b.xp} XP`}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <p style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:14px;">Every badge is capped at 50 XP — the rest of your progress comes from reading itself.</p>
+  `;
+}
+
+function renderShop(){
+  return `
+    <div class="chapter-head"><div class="num">§</div><h2>Reward Shop</h2></div>
+    <div class="card">
+      <div class="stat-row"><span class="stat-label">Spendable Balance</span><span class="stat-value">${state.spendableXP} XP</span></div>
+    </div>
+    <div class="card">
+      ${REWARDS.map(r=>`
+        <div class="shop-row">
+          <div>
+            <div class="name">${r.name}</div>
+            <div class="cost">${r.cost} XP</div>
+          </div>
+          <button class="redeem" data-reward="${r.id}" ${state.spendableXP<r.cost?'disabled':''}>Redeem</button>
+        </div>`).join('')}
+    </div>
+    <div class="chapter-head"><div class="num">§</div><h2>Redeemed</h2></div>
+    <div class="card">
+      ${state.redeemed.length ? state.redeemed.slice(0,10).map(r=>`
+        <div class="log-entry"><span>${r.name}</span><span class="xp">${r.date} · -${r.cost} XP</span></div>
+      `).join('') : `<div class="empty">Nothing redeemed yet.</div>`}
+    </div>
+  `;
+}
+
+function render(){
+  const book = document.getElementById('book');
+  let body = '';
+  if(activeTab==='dashboard') body = renderDashboard();
+  else if(activeTab==='log') body = renderLog();
+  else if(activeTab==='library') body = renderLibrary();
+  else if(activeTab==='badges') body = renderBadges();
+  else if(activeTab==='shop') body = renderShop();
+
+  book.innerHTML = `
+    <header class="titlepage">
+      <div class="eyebrow">Reading Season — 30 Days</div>
+      <h1>The Reader's Ledger</h1>
+      <div class="sub">a record of pages turned</div>
+    </header>
+    ${renderRibbons()}
+    <main>${body}</main>
+    <div class="footer-page">— page kept by you —</div>
+  `;
+  attachHandlers();
+}
+
+function attachHandlers(){
+  document.querySelectorAll('.ribbon').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; render(); });
+  });
+
+  if(activeTab==='dashboard'){
+    const saveBtn = document.getElementById('save-book');
+    if(saveBtn) saveBtn.addEventListener('click', ()=>{
+      state.currentBook = {
+        title: document.getElementById('cb-title').value.trim(),
+        totalPages: document.getElementById('cb-total').value,
+        currentPage: document.getElementById('cb-current').value,
+        genre: document.getElementById('cb-genre').value.trim(),
+        startDate: document.getElementById('cb-start').value,
+      };
+      saveState(); render();
+      toast('Book details saved');
+    });
+  }
+
+  if(activeTab==='log'){
+    document.getElementById('log-submit').addEventListener('click', ()=>{
+      const p = document.getElementById('log-pages').value;
+      const m = document.getElementById('log-minutes').value;
+      const bb = document.getElementById('log-bedtime').checked;
+      logReading(p, m, bb);
+    });
+    document.getElementById('act-chapter').addEventListener('click', finishChapter);
+    document.getElementById('act-summary').addEventListener('click', writeSummary);
+    document.getElementById('act-notes').addEventListener('click', highlightNotes);
+    document.getElementById('act-finish').addEventListener('click', ()=>{
+      const rating = prompt('Rate this book 1–5 stars:', '5');
+      if(rating===null) return;
+      finishBook(Math.max(0,Math.min(5, Number(rating)||0)));
+    });
+  }
+
+  if(activeTab==='shop'){
+    document.querySelectorAll('.redeem').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const r = REWARDS.find(x=>x.id===btn.dataset.reward);
+        if(r) redeemReward(r);
+      });
+    });
+  }
+}
+
+loadState();
+</script>
+</body>
+</html>
